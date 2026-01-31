@@ -99,7 +99,7 @@ export default class MenuScene extends Phaser.Scene {
       borderGraphics.clear();
       playButton.disableInteractive();
       this.music.stop();
-      this.scene.start('FinalScene');
+      this.scene.start('Level1Scene');
     });
 
     playButton.on('pointerover', () => {
