@@ -72,10 +72,10 @@ function getLevelLayout1(scene, W, H, groundH) {
   const platformInfos = [];
   
   // Ground (player starts here on the left)
-  const groundRect1 = scene.add.rectangle(0, H - groundH / 2, W /2, groundH, PLATFORMCOLOR1).setOrigin(0.5);
+  const groundRect1 = scene.add.rectangle(0, H - groundH / 2, W /1.8, groundH, PLATFORMCOLOR1).setOrigin(0.5);
   scene.physics.add.existing(groundRect1, true);
   platforms.push(groundRect1);
-  platformInfos.push({ x:0, y: H - groundH / 2, w: W/2, h: groundH, rect: groundRect1 });
+  platformInfos.push({ x:0, y: H - groundH / 2, w: W/1.8, h: groundH, rect: groundRect1 });
 
   const groundRect2 = scene.add.rectangle(W / 2.37 , H - groundH / 2, W /20, groundH, PLATFORMCOLOR1).setOrigin(0.5);
   scene.physics.add.existing(groundRect2, true);

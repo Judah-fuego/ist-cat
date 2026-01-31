@@ -35,7 +35,7 @@ export default class FinalScene extends Phaser.Scene {
         this.music.play();  
 
         // Big romantic question text at the top
-        const questionText = this.add.text(width / 2, 100, 'vei fi valentine meu?', {
+        const questionText = this.add.text(width / 2, 100, 'vei fi valentine mea?', {
             fontSize: '48px',
             color: '#ffffff',
             strokeThickness: 1,
