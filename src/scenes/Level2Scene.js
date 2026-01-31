@@ -1,7 +1,7 @@
-
 import Phaser from "phaser"
-import { createPlayer } from "../utils/player"
-import { getSelectedCharacter } from "../utils/characters"
+import { createPlayer, resetPlayer } from "../utils/player"
+import { getSelectedCharacter, createCharacterAnimations } from "../utils/characters"
+import { getPlatforms } from "../utils/platform"
 
 export default class Level2Scene extends Phaser.Scene {
   constructor() {
@@ -9,8 +9,7 @@ export default class Level2Scene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("beachBg", "/tiles/beach.jpeg")
-    this.load.image("oldMan", "/sprites/old_man.png")
+    this.load.image("istartBg", "/tiles/istart.png")
   }
 
   create() {
@@ -18,85 +17,108 @@ export default class Level2Scene extends Phaser.Scene {
     const H = this.scale.height
     this.W = W
 
+    // Get selected character and store for use in update
+    this.character = getSelectedCharacter();
+
+    createCharacterAnimations(this);
+
     // Background (cover)
-    const bg = this.add.image(0, 0, "beachBg").setOrigin(0).setDepth(-2)
+    const bg = this.add.image(0, 0, "istartBg").setOrigin(0).setDepth(-2)
     const bscale = Math.max(W / bg.width, H / bg.height)
     bg.setScale(bscale)
 
-    // Platforms - visuals + physics static bodies
-    const groundH = Math.max(40, Math.round(H * 0.06))
-    const groundRect = this.add.rectangle(W / 2, H - groundH / 2, W, groundH, 0x6b6b6b).setOrigin(0.5)
-    this.physics.add.existing(groundRect, true)
-
-    const plat1 = this.add.rectangle(W * 0.22, H * 0.58, Math.round(W * 0.12), 20, 0x999999).setOrigin(0.5)
-    this.physics.add.existing(plat1, true)
-
-    this.platformBodies = [groundRect, plat1]
-
+    // Platforms (modular, no overlap)
+    const { platforms, platformInfos } = getPlatforms(this, 'Level2Scene');
+    this.platformBodies = platforms;
+    this.platformInfos = platformInfos;
+    
     // Player
-    this.playerStart = { x: Math.round(W * 0.07), y: H - 120 }
-    const character = getSelectedCharacter();
-    this.player = createPlayer(this, this.playerStart.x, this.playerStart.y, character);
-    this.platformBodies.forEach(p => this.physics.add.collider(this.player, p))
+    this.playerStart = { x: 100, y: 100 }
+    this.player = createPlayer(this, this.playerStart.x, this.playerStart.y, this.character);
+    
+    // Collide player with platforms
+    this.platformBodies.forEach((p) => {
+      this.physics.add.collider(this.player, p);
+    });
 
+    // Set death zone Y position (adjust this value as needed)
+    this.deathY = H - 50; // Player resets if they fall below this line
+
+    // Input
     this.cursors = this.input.keyboard.createCursorKeys()
     this.add.text(16, 16, "Level 2", { fontSize: "20px", color: "#fbfbfbff" })
-
-    // followers
-    this.followers = this.physics.add.group()
-    const f = this.followers.create(Math.round(W * 0.7), H - 120, "oldMan").setScale(0.3)
-    f.setOrigin(0.5, 1) // pivot at bottom-center
-    const tex = this.textures.get('oldMan').getSourceImage();
-    const bottomPadding = 8; // Adjust this value based on your sprite's pivot
-    const visibleW = tex.width; // or measured trimmed width
-    const visibleH = tex.height - bottomPadding; // compute bottomPadding if known
-    f.body.setSize(visibleW * f.scaleX, visibleH * f.scaleY);
-    f.body.setOffset(0, bottomPadding * f.scaleY);
-    this.followers.getChildren().forEach(f => {
-      f.body.setCollideWorldBounds(true)
-      f.setBounce(0.2)
-      this.platformBodies.forEach(p => this.physics.add.collider(f, p))
-    })
-
-    // hazards
-    this.hazards = this.physics.add.group()
-    this.platformBodies.forEach(p => this.physics.add.collider(this.hazards, p))
-    this.physics.add.overlap(this.player, this.hazards, () => this.resetPlayer(), null, this)
-
     
-
-    // Door back to menu
-    const doorX = W - Math.round(W * 0.06)
-    const doorY = H - 120
-    this.doorZone = this.physics.add.staticGroup()
-    this.doorZone.create(doorX, doorY, null).setDisplaySize(40, 80).refreshBody()
-    this.add.rectangle(doorX, doorY, 40, 80, 0x222222).setOrigin(0.5)
+    // Door - moved up and to the right as requested
+    const doorX = W - 100
+    const doorY = H - 200
+    
+    // Create door visual FIRST
+    this.doorRect = this.add.rectangle(doorX, doorY, 40, 80, 0x8B4513).setOrigin(0.5);
+    
+    // Create door physics body
+    this.physics.add.existing(this.doorRect, true); // true = static body
+    
+    // DON'T use overlap callback - we'll check manually in update
     this.canEnter = false
-    this.physics.add.overlap(this.player, this.doorZone, () => { this.canEnter = true }, null, this)
   }
 
   update() {
-    if (this.cursors.left.isDown) this.player.setVelocityX(-200)
-    else if (this.cursors.right.isDown) this.player.setVelocityX(200)
-    else this.player.setVelocityX(0)
+    const cursors = this.input.keyboard.createCursorKeys();
 
-    if (this.cursors.up.isDown && this.player.body.onFloor()) this.player.setVelocityY(-400)
+    // Check if player fell below death zone
+    if (this.player.y > this.deathY) {
+      console.log('Player fell off - resetting!');
+      this.cameras.main.flash(200, 255, 0, 0);
+      this.resetPlayer();
+      return; // Exit update early after reset
+    }
 
-    this.followers.getChildren().forEach(f => {
-      const dx = this.player.x - f.x
-      const speed = 80
-      if (Math.abs(dx) > 10) f.setVelocityX(Math.sign(dx) * speed)
-      else f.setVelocityX(0)
-      if (this.player.y + 20 < f.y && (f.body.blocked.down || f.body.touching.down)) {
-        f.setVelocityY(-350)
+    // MANUALLY check if player is overlapping with door using Phaser's overlap check
+    this.canEnter = this.physics.overlap(this.player, this.doorRect);
+
+    // Get animation names based on selected character
+    const getAnimations = () => {
+      if (this.character === 'cat2') {
+        return { idle: 'cat2_idle', walkRight: 'cat2_walk_right', walkLeft: 'cat2_walk_left' };
       }
-    })
+      return { idle: 'cat_idle', walkRight: 'cat_walk', walkLeft: 'cat_walk' };
+    };
 
-    if (this.canEnter && this.player.x > this.W - Math.round(this.W * 0.08)) this.scene.start("MenuScene")
+    const animations = getAnimations();
+
+    if (cursors.left.isDown) {
+      this.player.setVelocityX(-160)
+      this.player.setFlipX(true)
+      this.player.anims.play(animations.walkLeft, true)
+    } else if (cursors.right.isDown) {
+      this.player.setVelocityX(160)
+      this.player.setFlipX(false)
+      this.player.anims.play(animations.walkRight, true)
+    } else {
+      this.player.setVelocityX(0)
+      this.player.anims.play(animations.idle, true)
+    }
+
+    if (this.cursors.up.isDown && this.player.body.onFloor()) {
+      this.player.setVelocityY(-400)
+    }
+
+    // Debug logging
+    if (this.canEnter) {
+      console.log('Player is at the door! Press DOWN to enter.');
+    }
+
+    // Door interaction
+    if (this.canEnter) {
+      console.log('Entering Level 3!');
+      this.cameras.main.fade(500, 0, 0, 0);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.scene.start('Level3Scene');
+      });
+    }
   }
 
   resetPlayer() {
-    this.player.setPosition(this.playerStart.x, this.playerStart.y)
-    this.player.setVelocity(0,0)
+    resetPlayer(this.player, this.playerStart);
   }
 }

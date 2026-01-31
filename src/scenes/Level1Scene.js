@@ -1,11 +1,7 @@
-
 import Phaser from "phaser"
 import { createPlayer, resetPlayer } from "../utils/player"
 import { getSelectedCharacter, createCharacterAnimations } from "../utils/characters"
 import { getPlatforms } from "../utils/platform"
-import { createFollowers, followFollowers } from "../utils/npc"
-import { createDoorZone } from "../utils/door"
-import { RAT_IDLE, RAT_WALK } from "../assets"
 
 export default class Level1Scene extends Phaser.Scene {
   constructor() {
@@ -15,13 +11,10 @@ export default class Level1Scene extends Phaser.Scene {
   preload() {
     this.load.image("subwayBg", "/tiles/metro2.gif");
     
-    // Preload rat assets for NPC
-    this.load.spritesheet('rat_idle', RAT_IDLE, { frameWidth: 32, frameHeight: 32 });
-    this.load.spritesheet('rat_walk', RAT_WALK, { frameWidth: 32, frameHeight: 32 });
+   
   }
 
   create() {
-    
     const W = this.scale.width
     const H = this.scale.height
     this.W = W
@@ -31,99 +24,90 @@ export default class Level1Scene extends Phaser.Scene {
 
     createCharacterAnimations(this);
 
-    
-
     // Background (cover)
     const bg = this.add.image(0, 0, "subwayBg").setOrigin(0).setDepth(-2)
     const bscale = Math.max(W / bg.width, H / bg.height)
     bg.setScale(bscale)
 
     // Platforms (modular, no overlap)
-    const { platforms, platformInfos, backpack } = getPlatforms(this, 'Level1Scene');
+    const { platforms, platformInfos, spike } = getPlatforms(this, 'Level1Scene');
     this.platformBodies = platforms;
-    this.backpack = backpack;
+    this.platformInfos = platformInfos;
+    this.spike = spike;
     this.groundY = this.scale.height - Math.max(40, Math.round(this.scale.height * 0.06)) / 2;
-
     
     // Player
     this.playerStart = { x: Math.round(W * 0.07), y: H - 120 }
     this.player = createPlayer(this, this.playerStart.x, this.playerStart.y, this.character);
-    // Collide player with each platform body
-    this.platformBodies.forEach(p => this.physics.add.collider(this.player, p))
+    
+    // Collide player with ONLY non-hazard platforms
+    this.platformBodies.forEach((p, index) => {
+      const platformData = this.platformInfos[index];
+      // Don't add collider for hazards or spike
+      if (!platformData?.isHazard && p !== this.spike) {
+        this.physics.add.collider(this.player, p);
+      }
+    });
+
+    // Add spike collision
+    if (this.spike) {
+      this.physics.add.overlap(this.player, this.spike, this.handleSpikeHit, null, this);
+    }
+
+    // Add lava hazard detection - use overlap, not collider
+    this.platformInfos.forEach((info) => {
+      if (info.isHazard && info.rect) {
+        this.physics.add.overlap(this.player, info.rect, this.handleLavaHit, null, this);
+      }
+    });
 
     // Input
     this.cursors = this.input.keyboard.createCursorKeys()
     this.add.text(16, 16, "Level 1", { fontSize: "20px", color: "#f3f2f2ff" })
-
-    // NPC followers for Level 1 - Rat that chases the player
-    this.followers = createFollowers(this, [
-      { x: Math.round(W * 0.8), y: this.playerStart.y, key: 'rat_idle', type: 'rat', scale: 2 }
-    ]);
-      this.followers.getChildren().forEach(f => {
-        f.body.setCollideWorldBounds(true);
-        f.setBounce(0.2);
-        f.body.setAllowGravity(true);
-        f.body.setImmovable(false);
-        this.platformBodies.forEach(p => this.physics.add.collider(f, p));
-      });
-
-    // Hazards (no auto spawn here; keep simple)
-    this.hazards = this.physics.add.group()
-    // hazards should collide with platforms
-    this.platformBodies.forEach(p => this.physics.add.collider(this.hazards, p))
-    this.physics.add.overlap(this.player, this.hazards, () => this.resetPlayer(), null, this)
-
-// Lava kills player
-    platformInfos
-      .filter(p => p.isHazard)
-      .forEach(lava => {
-        this.physics.add.overlap(
-          this.player,
-          lava.rect,
-          () => this.resetPlayer(),
-          null,
-          this
-        );
-      });
-    this.physics.add.collider(this.player, this.followers, () => this.resetPlayer(), null, this)
-
-    // Door (random platform, not ground)
     
+    
+    // Create door on final platform
+    const finalPlatformInfo = platformInfos.find(p => p.door);
+    if (finalPlatformInfo) {
+      const doorX = 50;
+      const doorY = 210;
       
-    const doorPlat = platformInfos.find(p => p.door === true);
-
-    if (!doorPlat) {
-      console.error("No door platform found!");
-    } else {
-      const DOOR_W = 40;
-      const DOOR_H = 80;
-
-      const doorX = doorPlat.x;
-      const doorY =
-        doorPlat.rect.y - doorPlat.h / 2 - DOOR_H / 2;
-
-      this.doorZone = createDoorZone(this, doorX + 40, doorY , DOOR_W, DOOR_H);
-
-      this.canEnter = false;
-      this.physics.add.overlap(
-        this.player,
-        this.doorZone,
-        () => (this.canEnter = true),
-        null,
-        this
-      );
+      this.door = this.add.rectangle(doorX, doorY, 40, 60, 0x8B4513)
+        .setOrigin(1, 1);
+      this.physics.add.existing(this.door, true);
+      this.physics.add.overlap(this.player, this.door, this.enterDoor, null, this);
     }
   }
 
-  update() {
+  handleSpikeHit(player, spike) {
+    console.log('Player hit spike!');
+    this.cameras.main.flash(200, 255, 0, 0);
+    this.resetPlayer();
+  }
 
-    // Animate falling backpack: fall faster and reset to top when it hits ground
-    if (this.backpack) {
+  handleLavaHit(player, lava) {
+    console.log('Player hit lava!');
+    this.cameras.main.flash(200, 255, 100, 0); // Orange flash for lava
+    this.resetPlayer();
+  }
+
+  enterDoor(player, door) {
+    // Optional: Add a transition effect
+    this.cameras.main.fade(500, 0, 0, 0);
+    
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('Level2Scene');
+    });
+  }
+
+  update() {
+    // Animate falling spike: fall faster and reset to top when it hits ground
+    if (this.spike) {
       // Set fast falling speed
-      this.backpack.body.setVelocityY(400);
-      // If backpack hits ground, reset to top
-      if (this.backpack.y > this.groundY - this.backpack.height / 2) {
-        this.backpack.y = 0;
+      this.spike.body.setVelocityY(400);
+      // If spike hits ground, reset to top
+      if (this.spike.y > this.groundY - this.spike.height / 2) {
+        this.spike.y = 0;
       }
     }
 
@@ -154,39 +138,9 @@ export default class Level1Scene extends Phaser.Scene {
       this.player.anims.play(animations.idle, true)
     }
 
-
-
     if (this.cursors.up.isDown && this.player.body.onFloor()) this.player.setVelocityY(-400)
 
-      // followers simple AI: move toward player (modular, call in update)
-      followFollowers(this.followers, this.player);
-
-      this.followers.getChildren().forEach(f => {
-        try {
-          if (f.body.velocity.x < 0) {
-            f.setFlipX(false); // left-facing sprite, not flipped
-            if (f.anims.currentAnim?.key !== 'rat_walk_left') {
-              f.anims.play('rat_walk_left', true);
-            }
-          } else if (f.body.velocity.x > 0) {
-            f.setFlipX(false); // right-facing sprite, not flipped
-            if (f.anims.currentAnim?.key !== 'rat_walk_right') {
-              f.anims.play('rat_walk_right', true);
-            }
-          } else {
-            if (f.anims.currentAnim?.key !== 'rat_idle') {
-              f.anims.play('rat_idle', true);
-            }
-          }
-        } catch (e) {
-          // Prevent crash on direction change or missing anim
-        }
-      });
-
-    // advance only if player is overlapping door zone
-    if (this.canEnter && this.player.x > this.W - Math.round(this.W * 0.08)) {
-      this.scene.start("Level2Scene")
-    }
+    
   }
 
   resetPlayer() {

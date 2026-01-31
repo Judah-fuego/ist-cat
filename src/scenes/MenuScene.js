@@ -93,7 +93,7 @@ export default class MenuScene extends Phaser.Scene {
       // Remove border and disable input to prevent double click
       borderGraphics.clear();
       playButton.disableInteractive();
-      this.scene.start('Level1Scene');
+      this.scene.start('Level2Scene');
     });
 
     playButton.on('pointerover', () => {
