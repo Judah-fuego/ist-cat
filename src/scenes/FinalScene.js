@@ -154,7 +154,7 @@ export default class FinalScene extends Phaser.Scene {
         graphics.fillRect(0, 0, width, height);
 
         // Victory message
-        const victoryText = this.add.text(width / 2, height / 2, 'yuhuuhuhu te iubesc', {
+        const victoryText = this.add.text(width / 2, height / 2, 'yuhuuhuhu te iubesc :) ', {
             fontSize: '64px',
             fontFamily: 'Arial',
             color: '#ffffff',
@@ -163,6 +163,16 @@ export default class FinalScene extends Phaser.Scene {
             strokeThickness: 6,
             align: 'center'
         });
+        const victoryText2 = this.add.text(width / 2, height / 4, 'you make me laugh so much and are always the sweetest part of my day', {
+            fontSize: '32px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            stroke: '#ff1493',
+            strokeThickness: 6,
+            align: 'center'
+        });
+        victoryText2.setOrigin(0.5);
         victoryText.setOrigin(0.5);
 
         // Add celebration particles/effects

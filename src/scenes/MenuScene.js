@@ -92,7 +92,8 @@ export default class MenuScene extends Phaser.Scene {
 
     // Add Play button
     const playButton = this.add.text(width * 0.5, height * 0.6, 'Play', { fontSize: '24px', fill: '#000' }).setOrigin(0.5).setInteractive();
-
+    const finalButton = this.add.text(width * 0.8, height * 0.8, 'Jump to the End', { fontSize: '24px', fill: '#000' }).setOrigin(0.5).setInteractive();
+    
     playButton.on('pointerdown', () => {
       setSelectedCharacter(selected); // 'cat' or 'cat2'
       // Remove border and disable input to prevent double click
@@ -100,6 +101,15 @@ export default class MenuScene extends Phaser.Scene {
       playButton.disableInteractive();
       this.music.stop();
       this.scene.start('Level1Scene');
+    });
+
+    finalButton.on('pointerdown', () => {
+      setSelectedCharacter(selected); // 'cat' or 'cat2'
+      // Remove border and disable input to prevent double click
+      borderGraphics.clear();
+      playButton.disableInteractive();
+      this.music.stop();
+      this.scene.start('FinalScene');
     });
 
     playButton.on('pointerover', () => {
