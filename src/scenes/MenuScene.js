@@ -16,10 +16,15 @@ export default class MenuScene extends Phaser.Scene {
     this.load.spritesheet('cat_walk', CAT_WALK, { frameWidth: 48, frameHeight: 48 });
     this.load.spritesheet('cat2_idle', CAT2_IDLE, { frameWidth: 48, frameHeight: 48 });
     this.load.spritesheet('cat2_walk', CAT2_WALK, { frameWidth: 48, frameHeight: 48 });
+
+    this.load.audio('menuMusic', '/audio/mall.mp3');
   }
 
   create() {
     const { width, height } = this.scale;
+
+     this.music = this.sound.add('menuMusic', { loop: true, volume: 0.5 });
+    this.music.play();
 
     // Add background image
     this.add.image(0, 0, 'menu-bg').setOrigin(0, 0).setDisplaySize(width, height);
@@ -93,7 +98,8 @@ export default class MenuScene extends Phaser.Scene {
       // Remove border and disable input to prevent double click
       borderGraphics.clear();
       playButton.disableInteractive();
-      this.scene.start('Level2Scene');
+      this.music.stop();
+      this.scene.start('FinalScene');
     });
 
     playButton.on('pointerover', () => {

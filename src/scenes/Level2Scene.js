@@ -10,6 +10,8 @@ export default class Level2Scene extends Phaser.Scene {
 
   preload() {
     this.load.image("istartBg", "/tiles/istart.png")
+    this.load.audio('roof', '/audio/roof.mp3');
+
   }
 
   create() {
@@ -21,6 +23,9 @@ export default class Level2Scene extends Phaser.Scene {
     this.character = getSelectedCharacter();
 
     createCharacterAnimations(this);
+
+     this.music = this.sound.add('roof', { loop: true, volume: 0.5 });
+    this.music.play();
 
     // Background (cover)
     const bg = this.add.image(0, 0, "istartBg").setOrigin(0).setDepth(-2)
@@ -46,7 +51,7 @@ export default class Level2Scene extends Phaser.Scene {
 
     // Input
     this.cursors = this.input.keyboard.createCursorKeys()
-    this.add.text(16, 16, "Level 2", { fontSize: "20px", color: "#fbfbfbff" })
+    this.add.text(16, 16, "Level 2", { fontSize: "20px", color: "rgb(0, 0, 0)" })
     
     // Door - moved up and to the right as requested
     const doorX = W - 100
@@ -113,6 +118,8 @@ export default class Level2Scene extends Phaser.Scene {
       console.log('Entering Level 3!');
       this.cameras.main.fade(500, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
+              this.music.stop();
+
         this.scene.start('Level3Scene');
       });
     }

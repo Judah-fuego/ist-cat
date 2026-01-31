@@ -10,7 +10,8 @@ export default class Level1Scene extends Phaser.Scene {
 
   preload() {
     this.load.image("subwayBg", "/tiles/metro2.gif");
-    
+    this.load.audio('metroMusic', '/audio/metro.mp3');
+
    
   }
 
@@ -18,6 +19,9 @@ export default class Level1Scene extends Phaser.Scene {
     const W = this.scale.width
     const H = this.scale.height
     this.W = W
+
+     this.music = this.sound.add('metroMusic', { loop: true, volume: 0.5 });
+    this.music.play();
 
     // Get selected character and store for use in update
     this.character = getSelectedCharacter();
@@ -63,7 +67,7 @@ export default class Level1Scene extends Phaser.Scene {
 
     // Input
     this.cursors = this.input.keyboard.createCursorKeys()
-    this.add.text(16, 16, "Level 1", { fontSize: "20px", color: "#f3f2f2ff" })
+    this.add.text(16, 16, "Level 1", { fontSize: "20px", color: "rgb(0, 0, 0)" })
     
     
     // Create door on final platform
@@ -96,6 +100,8 @@ export default class Level1Scene extends Phaser.Scene {
     this.cameras.main.fade(500, 0, 0, 0);
     
     this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.music.stop();
+
       this.scene.start('Level2Scene');
     });
   }
