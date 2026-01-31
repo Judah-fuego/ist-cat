@@ -18,6 +18,7 @@ export default class MenuScene extends Phaser.Scene {
     this.load.spritesheet('cat2_walk', CAT2_WALK, { frameWidth: 48, frameHeight: 48 });
 
     this.load.audio('menuMusic', '/audio/mall.mp3');
+
   }
 
   create() {

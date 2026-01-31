@@ -12,7 +12,8 @@ export default class Level1Scene extends Phaser.Scene {
     this.load.image("subwayBg", "/tiles/metro2.gif");
     this.load.audio('metroMusic', '/audio/metro.mp3');
 
-   
+    this.load.audio('death', '/audio/death.mp3');
+
   }
 
   create() {
@@ -86,12 +87,14 @@ export default class Level1Scene extends Phaser.Scene {
   handleSpikeHit(player, spike) {
     console.log('Player hit spike!');
     this.cameras.main.flash(200, 255, 0, 0);
+    this.music = this.sound.add('death', { loop: true, volume: 0.5 });
     this.resetPlayer();
   }
 
   handleLavaHit(player, lava) {
     console.log('Player hit lava!');
     this.cameras.main.flash(200, 255, 100, 0); // Orange flash for lava
+    this.music = this.sound.add('death', { loop: true, volume: 0.5 });
     this.resetPlayer();
   }
 

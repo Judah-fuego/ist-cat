@@ -44,7 +44,6 @@ export default class FinalScene extends Phaser.Scene {
         questionText.setOrigin(0.5);
 
         // Add some floating hearts for decoration
-        this.addFloatingHearts();
 
         // Create player character using the proper character system
         this.player = createPlayer(this, width / 2, height / 2, this.character);
@@ -196,30 +195,7 @@ export default class FinalScene extends Phaser.Scene {
         console.log('Ah, não seja assim! 😊');
     }
 
-    addFloatingHearts() {
-        // Add some decorative floating hearts
-        for (let i = 0; i < 10; i++) {
-            const x = Phaser.Math.Between(0, this.cameras.main.width);
-            const y = Phaser.Math.Between(0, this.cameras.main.height);
-            
-            const heart = this.add.text(x, y, '❤️', {
-                fontSize: '24px',
-                alpha: 0.3
-            });
-            
-            // Gentle floating animation
-            this.tweens.add({
-                targets: heart,
-                y: y - 50,
-                alpha: 0.5,
-                duration: 3000,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        }
-    }
-
+   
     celebrateWithHearts() {
         // Shower of hearts celebration
         const width = this.cameras.main.width;

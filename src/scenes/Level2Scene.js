@@ -12,6 +12,8 @@ export default class Level2Scene extends Phaser.Scene {
     this.load.image("istartBg", "/tiles/istart.png")
     this.load.audio('roof', '/audio/roof.mp3');
 
+    this.load.audio('death', '/audio/death.mp3');
+
   }
 
   create() {
@@ -74,6 +76,7 @@ export default class Level2Scene extends Phaser.Scene {
     if (this.player.y > this.deathY) {
       console.log('Player fell off - resetting!');
       this.cameras.main.flash(200, 255, 0, 0);
+      this.music = this.sound.add('death', { loop: true, volume: 0.5 });
       this.resetPlayer();
       return; // Exit update early after reset
     }

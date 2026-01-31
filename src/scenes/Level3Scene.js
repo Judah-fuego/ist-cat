@@ -18,6 +18,7 @@ export default class Level3Scene extends Phaser.Scene {
         this.load.image("treasure", "/exit.jpg")
         this.load.audio('water', '/audio/water.mp3');
 
+        this.load.audio('death', '/audio/death.mp3');
 
     }
 
@@ -222,6 +223,7 @@ export default class Level3Scene extends Phaser.Scene {
 }
 
 handleLevelReset() {
+  this.music = this.sound.add('death', { loop: true, volume: 0.5 });
   resetPlayer(this.player, this.playerStart);
   this.startLevelTimer(); // 🔥 THIS is what you were missing
 }
